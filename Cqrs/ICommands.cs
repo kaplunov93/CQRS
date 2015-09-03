@@ -2,60 +2,92 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Cqrs.Entities;
 using NHibernate;
 
 namespace Cqrs
 {
-    
-    public class AddNewCustomer
+    public static class ICommand
     {
+        private static Queue<Tuple<string,object>> commands=new Queue<Tuple<string, object>>();
+        private static bool Working = false;
 
-        public AddNewCustomer(string FirstName,string LastName,string number="")
+        public static void Add(Tuple<string, object> command)
         {
-            Customer newCustomer = new Customer(FirstName, LastName,number);
-            while (!CustomerEvents.onStartEvent(newCustomer)) { }
+            commands.Enqueue(command);
+            if(!Working)
+            {
+                Thread work = new Thread(Work);
+                work.Start();
+            }
+        }
+
+        private static void Work()
+        {
+            while (commands.Count>0)
+            {
+                Tuple<string, object> command = commands.Dequeue();
+                if (command.Item2 != null)
+                {
+                    Console.WriteLine(
+                          string.Format("Peek From Queue To {0} : {1}"
+                              , command.Item1
+                              , command.Item2.ToString()));
+                    if (command.Item1 == "AddCustomer")
+                        if (AddNewCustomer(command.Item2 as Customer))
+                            new AddnewEvent(command.Item1, command.Item2.ToString());
+                    if (command.Item1 == "DeleteCustomer")
+                        if (DeleteCustomer(command.Item2 as Customer))
+                            new AddnewEvent(command.Item1, command.Item2.ToString());
+                }
+            }
+            Working = false;
+        }
+
+        private static bool AddNewCustomer(Customer newCustomer)
+        {
             if (!CustomerQuery.Have(newCustomer))
             {
                 using (ISession session = SessionFactory.GetFactory().OpenSession())
                 {
                     session.Save(newCustomer);
                 }
-                CustomerEvents.onEndEvent("Add Customer",newCustomer);
-                return;
+                return true;
             }
-            CustomerEvents.onEndEvent(newCustomer);
+            return false;
+        }
+
+        private static bool DeleteCustomer(Customer customer)
+        {
+            bool flag = false;
+            if(CustomerQuery.FindById(customer.id)!=null)
+            using (ISession session = SessionFactory.GetFactory().OpenSession())
+                {
+                    using (var transaction = session.BeginTransaction())
+                    {
+                        session.Delete(customer);
+                        transaction.Commit();
+                        flag = true;
+                    }
+                }
+            return flag;
         }
     }
 
-    /// <summary>
-    ///!!! Don't Work !!!
-    /// </summary>
-    public class DeleteCustomer
+    public static class CustomerComamnds
     {
-        public DeleteCustomer(int id)
+        public static void Add(string FirstName, string LastName, string number = "")
+        {
+            Customer newCustomer = new Customer(FirstName, LastName, number);
+            ICommand.Add(new Tuple<string, object>("AddCustomer",newCustomer));
+        }
+
+        public static void Delete(int id)
         {
             Customer customer = CustomerQuery.FindById(id);
-            
-            if (customer != null)
-            {
-                while (!CustomerEvents.onStartEvent(customer)) { }
-                Customer customer1 = CustomerQuery.FindById(id);
-                if (customer1 != null)
-                {
-                    using (ISession session = SessionFactory.GetFactory().OpenSession())
-                    {
-                        using (var transaction = session.BeginTransaction())
-                        {
-                            session.Delete(customer);
-                            transaction.Commit();
-                        }
-                    }
-                    CustomerEvents.onEndEvent("Delete Customer", customer);
-                }
-                CustomerEvents.onEndEvent(customer);
-            }
+            ICommand.Add(new Tuple<string, object>("DeleteCustomer", customer));
         }
     }
 

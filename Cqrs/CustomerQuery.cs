@@ -13,14 +13,15 @@ namespace Cqrs
         public static bool Have(Customer customer)
         {
             bool flag = false;
-           Parallel.ForEach(CustomerQuery.Get(),cust=>
-            {
-                if (customer.Equals(cust))
-                {
-                    flag = true;
-                    return;
-                }
-             });
+            Parallel.ForEach(CustomerQuery.Get(),cust=>
+             {
+                 if (customer.Equals(cust))
+                 {
+                     flag = true;
+                     return;
+                 }
+              });
+            
             return flag;
         }
 

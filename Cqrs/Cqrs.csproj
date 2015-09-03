@@ -59,7 +59,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CustomerEvents.cs" />
     <Compile Include="CustomerQuery.cs" />
     <Compile Include="Entities\Customer.cs" />
     <Compile Include="Entities\Event.cs" />

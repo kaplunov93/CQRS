@@ -13,14 +13,14 @@ namespace Cqrs
         {
             
             var Customers = CustomerQuery.Get();
-
+            
             Console.WriteLine("---Customers---\n");
             Parallel.ForEach(Customers, cus => Console.WriteLine(cus.ToString())) ;
             Console.WriteLine("---End---\n");
 
             Console.Write("Write Customer Id to delete: ");
             int id = Convert.ToInt32(Console.ReadLine());
-            Parallel.For(1, 4, x => new DeleteCustomer(id));
+            Parallel.For(1, 4, x => CustomerComamnds.Delete(id));
             Console.WriteLine();
 
             var newCustomers = new List<Customer>
@@ -29,7 +29,7 @@ namespace Cqrs
             new Customer("Vasia","Pupkin"),
             new Customer("Viktor", "Pupkin")};
 
-            Parallel.ForEach(newCustomers, cus => new AddNewCustomer(cus.FirstName,cus.LastName,cus.number) );
+            Parallel.ForEach(newCustomers, cus => CustomerComamnds.Add(cus.FirstName,cus.LastName,cus.number) );
             
             Customers = CustomerQuery.Get();
 
