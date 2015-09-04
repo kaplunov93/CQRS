@@ -16,19 +16,23 @@ namespace Cqrs
 
         public static void Add(Tuple<string, object> command)
         {
-            commands.Enqueue(command);
-            if(!Working)
-            {
-                Thread work = new Thread(Work);
-                work.Start();
-            }
+            
+                commands.Enqueue(command);
+                Console.WriteLine(command.ToString());
+                if(!Working)
+                {
+                    Thread work = new Thread(Work);
+                    work.Start();
+                }
         }
 
         private static void Work()
         {
+            Working = true;
             while (commands.Count>0)
             {
                 Tuple<string, object> command = commands.Dequeue();
+                if (command != null)
                 if (command.Item2 != null)
                 {
                     Console.WriteLine(
@@ -62,7 +66,7 @@ namespace Cqrs
         private static bool DeleteCustomer(Customer customer)
         {
             bool flag = false;
-            if(CustomerQuery.FindById(customer.id)!=null)
+            if (CustomerQuery.Have(customer))
             using (ISession session = SessionFactory.GetFactory().OpenSession())
                 {
                     using (var transaction = session.BeginTransaction())
