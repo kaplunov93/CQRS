@@ -18,7 +18,6 @@ namespace Cqrs
         {
             
                 commands.Enqueue(command);
-                Console.WriteLine(command.ToString());
                 if(!Working)
                 {
                     Thread work = new Thread(Work);
